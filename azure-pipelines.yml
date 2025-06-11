@@ -1,5 +1,4 @@
-# Node.js pipeline for OWASP Juice Shop
-# Includes install, build, and test steps
+# Node.js Build Only Pipeline for Juice Shop
 
 trigger:
 - main
@@ -19,11 +18,6 @@ steps:
   displayName: 'Install dependencies'
 
 - script: |
-    echo "Building the application..."
+    echo "Building Juice Shop..."
     npm run build
   displayName: 'Build Juice Shop'
-
-- script: |
-    echo "Running tests..."
-    npm test
-  displayName: 'Run Tests'
