@@ -1,0 +1,43 @@
+trigger:
+- main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  PROJECT_KEY: 'juice-shop'  # Keep only project-specific vars here
+
+steps:
+- task: NodeTool@0
+  inputs:
+    versionSpec: '18.x'
+  displayName: 'Install Node.js'
+
+- script: |
+    npm install -g npm@latest
+    npm install
+    npm audit fix --force || true
+  displayName: 'Install dependencies'
+
+- task: SonarQubePrepare@5
+  inputs:
+    SonarQube: 'SonarQube-Local'  # ✅ Correct service connection name
+    scannerMode: 'CLI'
+    configMode: 'manual'
+    cliProjectKey: 'juice-shop'
+    cliProjectName: 'juice-shop'
+    cliSources: '.'
+    extraProperties: |
+      sonar.javascript.lcov.reportPaths=coverage/lcov.info
+
+- script: |
+    npm run test
+  displayName: 'Run tests to generate coverage'
+
+- task: SonarQubeAnalyze@5
+  displayName: 'Run SonarQube analysis'
+
+- task: SonarQubePublish@5
+  inputs:
+    pollingTimeoutSec: '300'
+  displayName: 'Publish SonarQube results'
