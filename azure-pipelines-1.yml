@@ -4,60 +4,11 @@ trigger:
 pool:
   vmImage: 'ubuntu-latest'
 
-variables:
-  PROJECT_KEY: 'juice-shop'
-
 steps:
-# ------------------------------------
-# Install Node.js
-# ------------------------------------
-- task: NodeTool@0
-  inputs:
-    versionSpec: '22.x'  # Updated to use Node.js v22
-  displayName: 'Install Node.js'
 
-# ------------------------------------
-# Install Dependencies
-# ------------------------------------
 - script: |
-    npm install -g npm@latest
-    npm install
-    npm audit fix --force || true
-  displayName: 'Install dependencies'
-
-# ------------------------------------
-# Run Tests to Generate Coverage
-# ------------------------------------
-- script: |
-    npm run test -- --code-coverage || true
-  displayName: 'Run tests to generate coverage'
-
-# ------------------------------------
-# Prepare SonarQube Analysis
-# ------------------------------------
-- task: SonarQubePrepare@5
-  inputs:
-    SonarQube: 'SonarQube-Local'  # Your Azure DevOps service connection name
-    scannerMode: 'CLI'
-    configMode: 'manual'
-    cliProjectKey: '$(PROJECT_KEY)'
-    cliProjectName: '$(PROJECT_KEY)'
-    cliSources: '.'
-    extraProperties: |
-      sonar.javascript.lcov.reportPaths=coverage/lcov.info
-      sonar.verbose=true
-
-# ------------------------------------
-# Run SonarScanner (pre-installed)
-# ------------------------------------
-- script: |
-    sonar-scanner
-  displayName: 'Run SonarScanner manually (pre-installed)'
-
-# ------------------------------------
-# Publish SonarQube Results
-# ------------------------------------
-- task: SonarQubePublish@5
-  inputs:
-    pollingTimeoutSec: '300'
-  displayName: 'Publish SonarQube results'
+    wget https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-5.0.1.3006-linux.zip
+    unzip sonar-scanner-cli-5.0.1.3006-linux.zip
+    export PATH=$PATH:$(pwd)/sonar-scanner-5.0.1.3006-linux/bin
+    sonar-scanner --version
+  displayName: 'Install SonarScanner CLI'
