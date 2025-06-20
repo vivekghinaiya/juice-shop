@@ -8,21 +8,36 @@ variables:
   PROJECT_KEY: 'juice-shop'
 
 steps:
+# ------------------------------------
+# Install Node.js
+# ------------------------------------
 - task: NodeTool@0
   inputs:
     versionSpec: '18.x'
   displayName: 'Install Node.js'
 
+# ------------------------------------
+# Install Dependencies
+# ------------------------------------
 - script: |
     npm install -g npm@latest
     npm install
     npm audit fix --force || true
   displayName: 'Install dependencies'
 
-# ✅ This sets environment vars like SONARQUBE_HOST_URL and token
+# ------------------------------------
+# Run Tests to Generate Coverage
+# ------------------------------------
+- script: |
+    npm run test -- --code-coverage || true
+  displayName: 'Run tests to generate coverage'
+
+# ------------------------------------
+# Prepare SonarQube Analysis
+# ------------------------------------
 - task: SonarQubePrepare@5
   inputs:
-    SonarQube: 'SonarQube-Local'
+    SonarQube: 'SonarQube-Local'  # Your Azure DevOps service connection name
     scannerMode: 'CLI'
     configMode: 'manual'
     cliProjectKey: '$(PROJECT_KEY)'
@@ -32,22 +47,16 @@ steps:
       sonar.javascript.lcov.reportPaths=coverage/lcov.info
       sonar.verbose=true
 
+# ------------------------------------
+# Run SonarScanner (pre-installed)
+# ------------------------------------
 - script: |
-    npm run test -- --code-coverage || true
-  displayName: 'Run tests to generate coverage'
+    sonar-scanner
+  displayName: 'Run SonarScanner manually (pre-installed)'
 
-# 📦 Install latest SonarScanner CLI manually
-- script: |
-    curl -sSLo sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-5.0.1.3006-linux.zip
-    unzip sonar-scanner.zip -d $HOME/.sonar
-    echo "$HOME/.sonar/sonar-scanner-5.0.1.3006-linux/bin" >> $GITHUB_PATH
-  displayName: 'Install SonarScanner CLI manually'
-
-# ✅ Use env set by SonarQubePrepare@5
-- script: |
-    $HOME/.sonar/sonar-scanner-5.0.1.3006-linux/bin/sonar-scanner
-  displayName: 'Run SonarScanner manually'
-
+# ------------------------------------
+# Publish SonarQube Results
+# ------------------------------------
 - task: SonarQubePublish@5
   inputs:
     pollingTimeoutSec: '300'
