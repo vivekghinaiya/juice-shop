@@ -13,7 +13,7 @@ steps:
 # ------------------------------------
 - task: NodeTool@0
   inputs:
-    versionSpec: '18.x'
+    versionSpec: '22.x'  # Updated to use Node.js v22
   displayName: 'Install Node.js'
 
 # ------------------------------------
