@@ -5,7 +5,7 @@ pool:
   vmImage: 'ubuntu-latest'
 
 variables:
-  PROJECT_KEY: 'juice-shop'  # You can customize this if needed
+  PROJECT_KEY: 'juice-shop'
 
 steps:
 - task: NodeTool@0
@@ -19,23 +19,34 @@ steps:
     npm audit fix --force || true
   displayName: 'Install dependencies'
 
+# ✅ This sets environment vars like SONARQUBE_HOST_URL and token
 - task: SonarQubePrepare@5
   inputs:
-    SonarQube: 'SonarQube-Local'  # ✅ Your configured service connection name
+    SonarQube: 'SonarQube-Local'
     scannerMode: 'CLI'
     configMode: 'manual'
-    cliProjectKey: 'juice-shop'
-    cliProjectName: 'juice-shop'
+    cliProjectKey: '$(PROJECT_KEY)'
+    cliProjectName: '$(PROJECT_KEY)'
     cliSources: '.'
     extraProperties: |
       sonar.javascript.lcov.reportPaths=coverage/lcov.info
+      sonar.verbose=true
 
 - script: |
     npm run test -- --code-coverage || true
-  displayName: 'Run tests to generate coverage (ignore failures)'
+  displayName: 'Run tests to generate coverage'
 
-- task: SonarQubeAnalyze@5
-  displayName: 'Run SonarQube analysis'
+# 📦 Install latest SonarScanner CLI manually
+- script: |
+    curl -sSLo sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-5.0.1.3006-linux.zip
+    unzip sonar-scanner.zip -d $HOME/.sonar
+    echo "$HOME/.sonar/sonar-scanner-5.0.1.3006-linux/bin" >> $GITHUB_PATH
+  displayName: 'Install SonarScanner CLI manually'
+
+# ✅ Use env set by SonarQubePrepare@5
+- script: |
+    $HOME/.sonar/sonar-scanner-5.0.1.3006-linux/bin/sonar-scanner
+  displayName: 'Run SonarScanner manually'
 
 - task: SonarQubePublish@5
   inputs:
