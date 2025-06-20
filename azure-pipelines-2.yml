@@ -1,0 +1,61 @@
+trigger:
+- main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  PROJECT_KEY: 'juice-shop'     # Your SonarQube project key
+  PROJECT_NAME: 'juice-shop'    # Display name in SonarQube
+  SONARQUBE_CONNECTION: 'SonarQube-Local'  # Name of service connection in Azure DevOps
+
+steps:
+# ------------------------------------------------------
+# Install Node.js and Project Dependencies
+# ------------------------------------------------------
+- task: NodeTool@0
+  inputs:
+    versionSpec: '18.x'
+  displayName: 'Install Node.js'
+
+- script: |
+    npm install -g npm@latest
+    npm install
+    npm audit fix --force || true
+  displayName: 'Install dependencies'
+
+# ------------------------------------------------------
+# Run Tests and Generate Coverage Report (LCOV)
+# ------------------------------------------------------
+- script: |
+    npm run test -- --code-coverage || true
+  displayName: 'Run tests with coverage'
+
+# ------------------------------------------------------
+# Prepare SonarQube Scanner
+# ------------------------------------------------------
+- task: SonarQubePrepare@5
+  inputs:
+    SonarQube: '$(SONARQUBE_CONNECTION)'     # Your service connection name
+    scannerMode: 'CLI'
+    configMode: 'manual'
+    cliProjectKey: '$(PROJECT_KEY)'
+    cliProjectName: '$(PROJECT_NAME)'
+    cliSources: '.'
+    extraProperties: |
+      sonar.javascript.lcov.reportPaths=coverage/lcov.info
+      sonar.verbose=true
+
+# ------------------------------------------------------
+# Run SonarQube Scan
+# ------------------------------------------------------
+- task: SonarQubeAnalyze@5
+  displayName: 'Run SonarQube analysis'
+
+# ------------------------------------------------------
+# Publish Results to SonarQube Dashboard
+# ------------------------------------------------------
+- task: SonarQubePublish@5
+  inputs:
+    pollingTimeoutSec: '300'
+  displayName: 'Publish SonarQube results'
